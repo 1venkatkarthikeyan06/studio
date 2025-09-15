@@ -53,6 +53,9 @@ const anonymizeTranscriptFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('Anonymization failed: no output from AI model.');
+    }
+    return output;
   }
 );
