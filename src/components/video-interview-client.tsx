@@ -98,7 +98,7 @@ export default function VideoInterviewClient() {
                 <CardContent className="text-center">
                     <p className="text-xl text-muted-foreground mb-6">{state.question}</p>
                     <div className="relative aspect-video rounded-lg overflow-hidden border bg-black">
-                        <video ref={videoRef} className="w-full h-full" autoPlay muted playsInline />
+                        <video ref={videoRef} className="w-full h-full" autoPlay playsInline muted />
                         {hasCameraPermission === false && (
                              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
                                 <Alert variant="destructive" className="w-auto">
