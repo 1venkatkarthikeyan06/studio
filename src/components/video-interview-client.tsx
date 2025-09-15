@@ -157,6 +157,7 @@ export default function VideoInterviewClient() {
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
+      finalTranscriptRef.current = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
           finalTranscriptRef.current += event.results[i][0].transcript;
@@ -217,9 +218,9 @@ export default function VideoInterviewClient() {
            toast({
               variant: 'destructive',
               title: 'Anonymization Failed',
-              description: 'Could not save the answer securely. It will be saved without anonymization.',
+              description: 'Could not save the answer securely as the AI service is currently unavailable. Please try again later.',
            });
-           saveToHistory(state.question, finalAnswer, finalAnswer);
+           saveToHistory(state.question, finalAnswer, '[Anonymization failed]');
         } finally {
           setIsAnonymizing(false);
         }
