@@ -1,4 +1,4 @@
 import { config } from 'dotenv';
 config();
 
-// import '@/ai/flows/generate-interview-question.ts';
+import '@/ai/flows/anonymize-transcript';
