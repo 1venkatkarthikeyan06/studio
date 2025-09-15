@@ -1,3 +1,5 @@
-export default function Home() {
-  return <></>;
+import AnonymizerClient from '@/components/anonymizer-client';
+
+export default function HomePage() {
+  return <AnonymizerClient />;
 }
