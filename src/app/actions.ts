@@ -1,48 +1,68 @@
 'use server';
 
 import {
-  anonymizeInterviewTranscript,
-  AnonymizeInterviewTranscriptOutput,
-} from '@/ai/flows/anonymize-interview-transcript';
-import { z } from 'zod';
+  generateInterviewQuestion,
+  GenerateInterviewQuestionInput,
+} from '@/ai/flows/generate-interview-question';
+import {z} from 'zod';
 
 const FormSchema = z.object({
-  transcript: z.string().min(50, {
-    message: 'Please provide a transcript of at least 50 characters.',
+  jobTitle: z.string().min(3, {
+    message: 'Please provide a valid job title.',
+  }),
+  jobDescription: z.string().min(20, {
+    message: 'Please provide a job description of at least 20 characters.',
   }),
 });
 
 export type State = {
   message?: string | null;
-  data?: AnonymizeInterviewTranscriptOutput & { originalTranscript: string };
+  question?: string | null;
+  jobDetails?: {
+    jobTitle: string;
+    jobDescription: string;
+  };
 };
 
-export async function anonymizeAction(
+export async function getQuestionAction(
   prevState: State,
   formData: FormData
 ): Promise<State> {
   const validatedFields = FormSchema.safeParse({
-    transcript: formData.get('transcript'),
+    jobTitle: formData.get('jobTitle'),
+    jobDescription: formData.get('jobDescription'),
   });
 
   if (!validatedFields.success) {
+    const firstError = Object.values(
+      validatedFields.error.flatten().fieldErrors
+    )[0]?.[0];
     return {
-      message: validatedFields.error.flatten().fieldErrors.transcript?.[0],
+      message: firstError,
     };
   }
-  
-  const transcript = validatedFields.data.transcript;
+
+  const {jobTitle, jobDescription} = validatedFields.data;
 
   try {
-    const result = await anonymizeInterviewTranscript({ transcript });
+    const input: GenerateInterviewQuestionInput = {
+      job: {
+        title: jobTitle,
+        description: jobDescription,
+      },
+      // You can add previously asked questions here to avoid repetition
+      // askedQuestions: [],
+    };
+    const result = await generateInterviewQuestion(input);
     return {
       message: null,
-      data: { ...result, originalTranscript: transcript },
+      question: result.question,
+      jobDetails: { jobTitle, jobDescription },
     };
   } catch (error) {
-    console.error('Anonymization failed:', error);
+    console.error('Failed to generate question:', error);
     return {
-      message: 'Failed to anonymize transcript. Please try again later.',
+      message: 'Failed to generate a new question. Please try again later.',
     };
   }
 }

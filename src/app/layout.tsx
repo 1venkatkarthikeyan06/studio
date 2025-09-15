@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Interview Anonymizer',
-  description: 'Anonymize interview transcripts with AI.',
+  title: 'AI Video Interviewer',
+  description: 'Practice your interview skills with an AI.',
 };
 
 export default function RootLayout({
