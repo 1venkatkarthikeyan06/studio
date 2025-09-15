@@ -54,7 +54,7 @@ const prompt = ai.definePrompt({
   prompt: `You are a data security expert. Your task is to perform Named Entity Recognition (NER) on the given transcript and anonymize it.
 
 1.  Identify any personally identifiable information (PII) such as: Name, Age, Date of birth, Phone number, Email address, Location/address, Organization/Company.
-2.  For each detected entity, generate a unique random identifier (e.g., Name → [NAME_1], Email → [EMAIL_1], Location → [LOC_1]).
+2.  For each detected entity, generate a unique random identifier using the following format: Name → N001, Age → AGE023, Phone → P045, Email → E001, Location → L001, Organization → O001, Date of birth -> DOB001. Ensure the numbers are unique for each entity of the same type.
 3.  Replace the detected entities in the transcript with their corresponding unique identifiers.
 4.  Create a mapping table (entityMap) that links the original entity to its anonymized ID and includes the entity type.
 
