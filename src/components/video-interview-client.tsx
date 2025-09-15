@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { getQuestionAction, State } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -37,7 +38,7 @@ function NextQuestionButton() {
 }
 
 export default function VideoInterviewClient() {
-  const [state, formAction] = useFormState(getQuestionAction, initialState);
+  const [state, formAction] = useActionState(getQuestionAction, initialState);
   const { toast } = useToast();
   
   const videoRef = useRef<HTMLVideoElement>(null);
