@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { getQuestionAction, State } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -79,6 +79,7 @@ export type InterviewEntry = {
 export default function VideoInterviewClient() {
   const [state, formAction] = useActionState(getQuestionAction, initialState);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [interviewHistory, setInterviewHistory] = useState<InterviewEntry[]>([]);
   const [isAnonymizing, setIsAnonymizing] = useState(false);
@@ -260,7 +261,9 @@ export default function VideoInterviewClient() {
     setTranscript('');
     finalTranscriptRef.current = '';
     const formData = new FormData();
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
   };
 
   if (interviewStarted) {
