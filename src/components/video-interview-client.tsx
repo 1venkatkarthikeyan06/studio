@@ -221,19 +221,15 @@ export default function VideoInterviewClient() {
           if (result) {
             saveToHistory(state.question, finalAnswer, result);
           } else {
-            toast({
-              variant: 'destructive',
-              title: 'Anonymization Failed',
-              description: 'The AI service is currently unavailable. Please try again later.',
-            });
-            saveToHistory(state.question, finalAnswer, null);
+            // This case might be hit if the flow returns null explicitly without an error.
+            throw new Error('Anonymization returned no result.');
           }
         } catch (error) {
           console.error('Failed to anonymize transcript:', error);
           const errorMessage =
-            error instanceof Error
-              ? error.message
-              : 'An unknown error occurred.';
+            error instanceof Error && error.message.includes('overloaded')
+              ? 'The AI service is currently overloaded. Please try again later.'
+              : 'An unexpected error occurred during anonymization.';
           toast({
             variant: 'destructive',
             title: 'Anonymization Failed',
