@@ -108,10 +108,10 @@ export default function VideoInterviewClient() {
         description: state.message,
       });
     }
-    if (state.question) {
+    if (state.question && !interviewStarted) {
       setInterviewStarted(true);
     }
-  }, [state, toast]);
+  }, [state, toast, interviewStarted]);
 
   useEffect(() => {
     if (!interviewStarted) return;
@@ -218,7 +218,16 @@ export default function VideoInterviewClient() {
         setIsAnonymizing(true);
         try {
           const result = await anonymizeTranscript({ transcript: finalAnswer });
-          saveToHistory(state.question, finalAnswer, result);
+          if (result) {
+            saveToHistory(state.question, finalAnswer, result);
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Anonymization Failed',
+              description: 'The AI service is currently unavailable. Please try again later.',
+            });
+            saveToHistory(state.question, finalAnswer, null);
+          }
         } catch (error) {
           console.error('Failed to anonymize transcript:', error);
           const errorMessage =

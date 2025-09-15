@@ -43,7 +43,7 @@ export type AnonymizeTranscriptOutput = z.infer<
 
 export async function anonymizeTranscript(
   input: AnonymizeTranscriptInput
-): Promise<AnonymizeTranscriptOutput> {
+): Promise<AnonymizeTranscriptOutput | null> {
   return anonymizeTranscriptFlow(input);
 }
 
@@ -67,20 +67,19 @@ const anonymizeTranscriptFlow = ai.defineFlow(
   {
     name: 'anonymizeTranscriptFlow',
     inputSchema: AnonymizeTranscriptInputSchema,
-    outputSchema: AnonymizeTranscriptOutputSchema,
+    outputSchema: AnonymizeTranscriptOutputSchema.nullable(),
   },
   async (input) => {
     try {
       const { output } = await prompt(input);
       if (!output) {
-        throw new Error('Anonymization failed: no output from AI model.');
+        console.error('Anonymization failed: no output from AI model.');
+        return null;
       }
       return output;
     } catch (error) {
       console.error('Anonymization flow failed:', error);
-      throw new Error(
-        'The AI service is currently unavailable. Please try again later.'
-      );
+      return null;
     }
   }
 );
