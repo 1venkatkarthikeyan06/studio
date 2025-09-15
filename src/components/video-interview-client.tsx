@@ -5,7 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { getQuestionAction, State } from '@/app/actions';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Video, Mic, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +40,7 @@ function NextQuestionButton() {
 export default function VideoInterviewClient() {
   const [state, formAction] = useActionState(getQuestionAction, initialState);
   const { toast } = useToast();
+  const [interviewStarted, setInterviewStarted] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -56,7 +57,7 @@ export default function VideoInterviewClient() {
 
   useEffect(() => {
     const getCameraPermission = async () => {
-      if (!state.question) return;
+      if (!interviewStarted) return;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         setHasCameraPermission(true);
@@ -84,9 +85,14 @@ export default function VideoInterviewClient() {
             stream.getTracks().forEach(track => track.stop());
         }
     }
-  }, [state.question, toast]);
+  }, [interviewStarted, toast]);
 
-  if (state.question) {
+  const handleStart = (formData: FormData) => {
+    setInterviewStarted(true);
+    formAction(formData);
+  }
+
+  if (interviewStarted) {
     return (
       <div className="flex flex-col items-center min-h-screen p-4 sm:p-6 md:p-8 bg-gray-50">
         <header className="w-full max-w-5xl mb-8 text-center">
@@ -102,7 +108,7 @@ export default function VideoInterviewClient() {
                     <CardTitle className="text-center text-2xl font-semibold">Current Question</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                    <p className="text-xl text-muted-foreground mb-6">{state.question}</p>
+                    <p className="text-xl text-muted-foreground mb-6">{state.question || 'Getting your first question...'}</p>
                     <div className="relative aspect-video rounded-lg overflow-hidden border bg-black">
                         <video ref={videoRef} className="w-full h-full" autoPlay playsInline muted />
                         {hasCameraPermission === false && (
@@ -144,7 +150,7 @@ export default function VideoInterviewClient() {
       </header>
 
       <main className="w-full max-w-xl text-center">
-        <form action={formAction}>
+        <form action={handleStart}>
           <SubmitButton />
         </form>
       </main>
