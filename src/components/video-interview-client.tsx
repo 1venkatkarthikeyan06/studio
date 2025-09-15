@@ -28,9 +28,8 @@ const initialState: State = {
   questionIndex: -1,
 };
 
-function SubmitButton() {
+function StartInterviewButton() {
   const { pending } = useFormStatus();
-  const text = pending ? 'Starting...' : 'Start Interview';
   return (
     <Button
       type="submit"
@@ -43,7 +42,7 @@ function SubmitButton() {
       ) : (
         <Video className="mr-2" />
       )}
-      {text}
+      Start Interview
     </Button>
   );
 }
@@ -109,7 +108,10 @@ export default function VideoInterviewClient() {
         description: state.message,
       });
     }
-  }, [state.message, toast]);
+    if (state.question) {
+      setInterviewStarted(true);
+    }
+  }, [state, toast]);
 
   useEffect(() => {
     if (!interviewStarted) return;
@@ -162,16 +164,14 @@ export default function VideoInterviewClient() {
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
-      let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+          finalTranscriptRef.current += event.results[i][0].transcript;
         } else {
           interimTranscript += event.results[i][0].transcript;
         }
       }
-      finalTranscriptRef.current = finalTranscript;
-      setTranscript(finalTranscript + interimTranscript);
+      setTranscript(finalTranscriptRef.current + interimTranscript);
     };
 
     recognition.onerror = (event: any) => {
@@ -189,11 +189,6 @@ export default function VideoInterviewClient() {
 
     recognitionRef.current = recognition;
   }, [toast]);
-
-  const handleStart = (formData: FormData) => {
-    setInterviewStarted(true);
-    formAction(formData);
-  };
 
   const saveToHistory = (
     question: string,
@@ -395,13 +390,8 @@ export default function VideoInterviewClient() {
       </header>
 
       <main className="w-full max-w-xl text-center">
-        <form
-          action={() => {
-            const formData = new FormData();
-            handleStart(formData);
-          }}
-        >
-          <SubmitButton />
+        <form action={formAction}>
+          <StartInterviewButton />
         </form>
         <InterviewHistory history={interviewHistory} />
       </main>
