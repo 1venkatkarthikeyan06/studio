@@ -16,7 +16,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Video, Mic, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/logo';
-import { anonymizeTranscript } from '@/ai/flows/anonymize-transcript';
+import {
+  anonymizeTranscript,
+  AnonymizeTranscriptOutput,
+} from '@/ai/flows/anonymize-transcript';
 import InterviewHistory from './interview-history';
 
 const initialState: State = {
@@ -69,6 +72,7 @@ export type InterviewEntry = {
   question: string;
   answer: string;
   anonymizedAnswer: string;
+  entityMap: AnonymizeTranscriptOutput['entityMap'];
   date: string;
 };
 
@@ -189,12 +193,14 @@ export default function VideoInterviewClient() {
   const saveToHistory = (
     question: string,
     answer: string,
-    anonymizedAnswer: string
+    anonymizedResult: AnonymizeTranscriptOutput | null
   ) => {
     const newEntry: InterviewEntry = {
       question,
       answer,
-      anonymizedAnswer,
+      anonymizedAnswer:
+        anonymizedResult?.anonymizedTranscript || '[Anonymization failed]',
+      entityMap: anonymizedResult?.entityMap || [],
       date: new Date().toISOString(),
     };
     const updatedHistory = [newEntry, ...interviewHistory];
@@ -206,21 +212,25 @@ export default function VideoInterviewClient() {
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
-      
+
       const finalAnswer = finalTranscriptRef.current.trim();
       if (finalAnswer && state.question) {
         setIsAnonymizing(true);
         try {
           const result = await anonymizeTranscript({ transcript: finalAnswer });
-          saveToHistory(state.question, finalAnswer, result.anonymizedTranscript);
+          saveToHistory(state.question, finalAnswer, result);
         } catch (error) {
-           console.error('Failed to anonymize transcript:', error);
-           toast({
-              variant: 'destructive',
-              title: 'Anonymization Failed',
-              description: 'Could not save the answer securely as the AI service is currently unavailable. Please try again later.',
-           });
-           saveToHistory(state.question, finalAnswer, '[Anonymization failed]');
+          console.error('Failed to anonymize transcript:', error);
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : 'An unknown error occurred.';
+          toast({
+            variant: 'destructive',
+            title: 'Anonymization Failed',
+            description: errorMessage,
+          });
+          saveToHistory(state.question, finalAnswer, null);
         } finally {
           setIsAnonymizing(false);
         }
@@ -328,11 +338,11 @@ export default function VideoInterviewClient() {
                   <p className="text-muted-foreground">
                     {transcript || 'Your transcript will appear here...'}
                   </p>
-                   {isAnonymizing && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                          <Loader2 className="animate-spin h-4 w-4" />
-                          <span>Anonymizing and saving...</span>
-                      </div>
+                  {isAnonymizing && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                      <Loader2 className="animate-spin h-4 w-4" />
+                      <span>Anonymizing and saving...</span>
+                    </div>
                   )}
                 </div>
                 <Button
@@ -347,12 +357,17 @@ export default function VideoInterviewClient() {
               </CardContent>
             </Card>
           </div>
-          <form action={handleNextQuestion} className="mt-6 flex justify-center">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleNextQuestion();
+            }}
+            className="mt-6 flex justify-center"
+          >
             <NextQuestionButton />
           </form>
-          
-          <InterviewHistory history={interviewHistory} />
 
+          <InterviewHistory history={interviewHistory} />
         </main>
       </div>
     );
@@ -373,10 +388,15 @@ export default function VideoInterviewClient() {
       </header>
 
       <main className="w-full max-w-xl text-center">
-        <form action={handleStart}>
+        <form
+          action={() => {
+            const formData = new FormData();
+            handleStart(formData);
+          }}
+        >
           <SubmitButton />
         </form>
-         <InterviewHistory history={interviewHistory} />
+        <InterviewHistory history={interviewHistory} />
       </main>
 
       <footer className="w-full max-w-5xl mt-16 text-center text-sm text-muted-foreground absolute bottom-8">
