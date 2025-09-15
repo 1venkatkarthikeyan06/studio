@@ -3,8 +3,8 @@
  * @fileOverview This file defines a Genkit flow for generating interview questions.
  *
  * It exports:
- * - `generateInterviewQuestion`: A function that generates an interview question based on job details.
- * - `GenerateInterviewQuestionInput`: The input type, including job title and description.
+ * - `generateInterviewQuestion`: A function that generates an interview question.
+ * - `GenerateInterviewQuestionInput`: The input type for the flow.
  * - `GenerateInterviewQuestionOutput`: The output type, containing the generated question.
  */
 
@@ -12,12 +12,6 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateInterviewQuestionInputSchema = z.object({
-  job: z.object({
-    title: z.string().describe('The title of the job for the interview.'),
-    description: z
-      .string()
-      .describe('The description of the job for the interview.'),
-  }),
   askedQuestions: z
     .array(z.string())
     .optional()
@@ -48,10 +42,7 @@ const prompt = ai.definePrompt({
   name: 'generateInterviewQuestionPrompt',
   input: {schema: GenerateInterviewQuestionInputSchema},
   output: {schema: GenerateInterviewQuestionOutputSchema},
-  prompt: `You are an expert interviewer. Generate a relevant interview question for the following job role.
-
-Job Title: {{{job.title}}}
-Job Description: {{{job.description}}}
+  prompt: `You are an expert interviewer. Generate a relevant HR interview question.
 
 {{#if askedQuestions}}
 Avoid asking the following questions that have already been asked:
@@ -60,7 +51,7 @@ Avoid asking the following questions that have already been asked:
 {{/each}}
 {{/if}}
 
-Generate one new, insightful question. The question should be behavioral, situational, or technical, depending on what is most appropriate for the role.
+Generate one new, insightful question. The question should be a standard behavioral or situational HR question.
 `,
 });
 

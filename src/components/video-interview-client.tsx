@@ -5,9 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { getQuestionAction, State } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Video, Mic, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -22,7 +19,7 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   const text = pending ? 'Generating...' : 'Start Interview';
   return (
-    <Button type="submit" disabled={pending} className="w-full sm:w-auto">
+    <Button type="submit" disabled={pending} size="lg" className="px-8 py-6 text-lg">
       {pending ? <Loader2 className="animate-spin mr-2" /> : <Video className="mr-2" />}
       {text}
     </Button>
@@ -78,6 +75,14 @@ export default function VideoInterviewClient() {
     };
 
     getCameraPermission();
+
+    // Cleanup function to stop media tracks when component unmounts or question changes
+    return () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
   }, [state.question, toast]);
 
   if (state.question) {
@@ -118,8 +123,6 @@ export default function VideoInterviewClient() {
                 </CardContent>
             </Card>
             <form action={formAction} className="mt-6 flex justify-center">
-                <input type="hidden" name="jobTitle" value={state.jobDetails?.jobTitle} />
-                <input type="hidden" name="jobDescription" value={state.jobDetails?.jobDescription} />
                 <NextQuestionButton />
             </form>
         </main>
@@ -135,46 +138,14 @@ export default function VideoInterviewClient() {
           <h1 className="text-4xl md:text-5xl font-headline font-bold">AI Video Interviewer</h1>
         </div>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Practice your interview skills. Tell us about the job you're applying for, and our AI will ask you relevant questions.
+          Practice your interview skills. The AI will ask you relevant HR questions.
         </p>
       </header>
 
-      <main className="w-full max-w-xl">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Job Details</CardTitle>
-            <CardDescription>
-              Provide the job title and description to start the interview.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form action={formAction} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="jobTitle" className="font-semibold">Job Title</Label>
-                <Input
-                  id="jobTitle"
-                  name="jobTitle"
-                  placeholder="e.g., Senior Software Engineer"
-                  required
-                />
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="jobDescription" className="font-semibold">Job Description</Label>
-                <Textarea
-                  id="jobDescription"
-                  name="jobDescription"
-                  placeholder="Paste the job description here..."
-                  rows={8}
-                  className="font-code text-sm"
-                  required
-                />
-              </div>
-              <div className="flex justify-end">
-                <SubmitButton />
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+      <main className="w-full max-w-xl text-center">
+        <form action={formAction}>
+          <SubmitButton />
+        </form>
       </main>
       
       <footer className="w-full max-w-5xl mt-16 text-center text-sm text-muted-foreground absolute bottom-8">
