@@ -14,11 +14,12 @@ import { Logo } from '@/components/logo';
 const initialState: State = {
   message: null,
   question: null,
+  questionIndex: -1,
 };
 
 function SubmitButton() {
   const { pending } = useFormStatus();
-  const text = pending ? 'Generating...' : 'Start Interview';
+  const text = pending ? 'Starting...' : 'Start Interview';
   return (
     <Button type="submit" disabled={pending} size="lg" className="px-8 py-6 text-lg">
       {pending ? <Loader2 className="animate-spin mr-2" /> : <Video className="mr-2" />}
@@ -37,7 +38,6 @@ function NextQuestionButton() {
   );
 }
 
-// Add at the top of the file
 interface IWindow extends Window {
   webkitSpeechRecognition: any;
 }
@@ -103,7 +103,6 @@ export default function VideoInterviewClient() {
 
   useEffect(() => {
     if (typeof webkitSpeechRecognition === 'undefined') {
-      // Silently fail if not supported
       return;
     }
 
@@ -122,7 +121,7 @@ export default function VideoInterviewClient() {
           interimTranscript += event.results[i][0].transcript;
         }
       }
-      setTranscript(transcript + finalTranscript + interimTranscript);
+      setTranscript(prev => prev + finalTranscript + interimTranscript);
     };
     
     recognition.onerror = (event: any) => {
@@ -137,7 +136,7 @@ export default function VideoInterviewClient() {
     
     recognitionRef.current = recognition;
 
-  }, [toast, transcript]);
+  }, [toast]);
 
   const handleStart = (formData: FormData) => {
     setInterviewStarted(true);
@@ -164,12 +163,13 @@ export default function VideoInterviewClient() {
     }
   }
   
-  const handleNextQuestion = (formData: FormData) => {
+  const handleNextQuestion = () => {
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
     }
     setTranscript('');
+    const formData = new FormData();
     formAction(formData);
   }
 
@@ -248,7 +248,7 @@ export default function VideoInterviewClient() {
           <h1 className="text-4xl md:text-5xl font-headline font-bold">AI Video Interviewer</h1>
         </div>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Practice your interview skills. The AI will ask you relevant HR questions.
+          Practice your interview skills with a standard set of HR questions.
         </p>
       </header>
 
