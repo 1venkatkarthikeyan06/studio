@@ -162,18 +162,22 @@ export default function VideoInterviewClient() {
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
-      finalTranscriptRef.current = '';
+      let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
-          finalTranscriptRef.current += event.results[i][0].transcript;
+          finalTranscript += event.results[i][0].transcript;
         } else {
           interimTranscript += event.results[i][0].transcript;
         }
       }
-      setTranscript(finalTranscriptRef.current + interimTranscript);
+      finalTranscriptRef.current = finalTranscript;
+      setTranscript(finalTranscript + interimTranscript);
     };
 
     recognition.onerror = (event: any) => {
+      if (event.error === 'aborted') {
+        return;
+      }
       console.error('Speech recognition error', event.error);
       toast({
         variant: 'destructive',
