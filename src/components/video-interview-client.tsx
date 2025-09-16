@@ -116,26 +116,31 @@ export default function VideoInterviewClient() {
         description: state.message,
       });
     }
-  }, [state, toast]);
+    if (state.question && !interviewStarted && state.questionIndex === 0) {
+      setInterviewStarted(true);
+    }
+  }, [state, toast, interviewStarted]);
 
   const saveToHistory = (
     question: string,
     answer: string,
     analysisResult: AnalyzeAnswerOutput | null
   ) => {
-    const newEntry: InterviewEntry = {
-      question,
-      answer,
-      anonymizedAnswer:
-        analysisResult?.anonymizedAnswer || '[Analysis failed]',
-      analysis: analysisResult,
-      date: new Date().toISOString(),
-      role: state.role!,
-      inputType,
-    };
-    const updatedHistory = [newEntry, ...interviewHistory];
-    setInterviewHistory(updatedHistory);
-    localStorage.setItem('interviewHistory', JSON.stringify(updatedHistory));
+    setInterviewHistory(prevHistory => {
+      const newEntry: InterviewEntry = {
+        question,
+        answer,
+        anonymizedAnswer:
+          analysisResult?.anonymizedAnswer || '[Analysis failed]',
+        analysis: analysisResult,
+        date: new Date().toISOString(),
+        role: state.role!,
+        inputType,
+      };
+      const updatedHistory = [newEntry, ...prevHistory];
+      localStorage.setItem('interviewHistory', JSON.stringify(updatedHistory));
+      return updatedHistory;
+    });
   };
 
   const performAnalysis = async (answer: string) => {
@@ -291,8 +296,7 @@ export default function VideoInterviewClient() {
     });
   };
 
-  const startInterview = (formData: FormData) => {
-    setInterviewStarted(true);
+  const startInterviewAction = (formData: FormData) => {
     startTransition(() => formAction(formData));
   }
 
@@ -312,7 +316,7 @@ export default function VideoInterviewClient() {
         </header>
 
         <main className="w-full max-w-xl text-center">
-          <form action={startInterview} className="space-y-6">
+          <form action={startInterviewAction} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
               <div>
                   <Label htmlFor="role-select">Select a Role</Label>
