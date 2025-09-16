@@ -139,24 +139,26 @@ export default function VideoInterviewClient() {
   };
 
   const performAnalysis = async (answer: string) => {
-    if (answer && state.question && state.role) {
-      setIsAnalyzing(true);
-      try {
+    if (!answer || !state.question || !state.role) {
+        return;
+    }
+    
+    setIsAnalyzing(true);
+    try {
         const result = await analyzeAnswer({ question: state.question, answer, role: state.role });
         saveToHistory(state.question, answer, result);
-      } catch (error) {
+    } catch (error) {
         console.error('Failed to analyze answer:', error);
         toast({
-          variant: 'destructive',
-          title: 'Analysis Failed',
-          description: 'An unexpected error occurred during analysis.',
+            variant: 'destructive',
+            title: 'Analysis Failed',
+            description: 'An unexpected error occurred during analysis.',
         });
         saveToHistory(state.question, answer, null);
-      } finally {
+    } finally {
         setIsAnalyzing(false);
         setTranscript('');
         finalTranscriptRef.current = '';
-      }
     }
   };
 
