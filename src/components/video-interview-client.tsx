@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, use } from 'react';
+import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { getQuestionAction, State } from '@/app/actions';
@@ -118,6 +118,49 @@ export default function VideoInterviewClient() {
     }
   }, [state, toast]);
 
+  const saveToHistory = (
+    question: string,
+    answer: string,
+    analysisResult: AnalyzeAnswerOutput | null
+  ) => {
+    const newEntry: InterviewEntry = {
+      question,
+      answer,
+      anonymizedAnswer:
+        analysisResult?.anonymizedAnswer || '[Analysis failed]',
+      analysis: analysisResult,
+      date: new Date().toISOString(),
+      role: state.role!,
+      inputType,
+    };
+    const updatedHistory = [newEntry, ...interviewHistory];
+    setInterviewHistory(updatedHistory);
+    localStorage.setItem('interviewHistory', JSON.stringify(updatedHistory));
+  };
+
+  const performAnalysis = async (answer: string) => {
+    if (answer && state.question && state.role) {
+      setIsAnalyzing(true);
+      try {
+        const result = await analyzeAnswer({ question: state.question, answer, role: state.role });
+        saveToHistory(state.question, answer, result);
+      } catch (error) {
+        console.error('Failed to analyze answer:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Analysis Failed',
+          description: 'An unexpected error occurred during analysis.',
+        });
+        saveToHistory(state.question, answer, null);
+      } finally {
+        setIsAnalyzing(false);
+        setTranscript('');
+        finalTranscriptRef.current = '';
+      }
+    }
+  };
+
+
   useEffect(() => {
     if (!interviewStarted || inputType === 'text') return;
 
@@ -146,19 +189,14 @@ export default function VideoInterviewClient() {
 
     getCameraPermission();
 
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => track.stop());
-      }
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, [interviewStarted, inputType, toast]);
-
-  useEffect(() => {
-    if (typeof webkitSpeechRecognition === 'undefined' || inputType === 'text') {
+    // Setup speech recognition
+    if (typeof webkitSpeechRecognition === 'undefined') {
+      toast({
+            variant: 'destructive',
+            title: 'Browser Not Supported',
+            description:
+              'Speech recognition is not supported in your browser. Please use Google Chrome.',
+          });
       return;
     }
 
@@ -169,7 +207,8 @@ export default function VideoInterviewClient() {
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
+      finalTranscriptRef.current = '';
+      for (let i = 0; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
           finalTranscriptRef.current += event.results[i][0].transcript;
         } else {
@@ -181,7 +220,7 @@ export default function VideoInterviewClient() {
 
     recognition.onerror = (event: any) => {
       if (event.error === 'aborted') {
-        return;
+        return; // Ignore aborted errors, they are expected
       }
       console.error('Speech recognition error', event.error);
       toast({
@@ -191,109 +230,60 @@ export default function VideoInterviewClient() {
       });
       setIsRecording(false);
     };
+    
+    recognition.onend = () => {
+      setIsRecording(false);
+      const finalAnswer = finalTranscriptRef.current.trim();
+      if(finalAnswer) {
+        performAnalysis(finalAnswer);
+      }
+    };
 
     recognitionRef.current = recognition;
-  }, [toast, inputType]);
 
-  const saveToHistory = (
-    question: string,
-    answer: string,
-    analysisResult: AnalyzeAnswerOutput | null
-  ) => {
-    const newEntry: InterviewEntry = {
-      question,
-      answer,
-      anonymizedAnswer:
-        analysisResult?.anonymizedAnswer || '[Analysis failed]',
-      analysis: analysisResult,
-      date: new Date().toISOString(),
-      role: state.role!,
-      inputType,
+
+    return () => {
+      // Cleanup
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
     };
-    const updatedHistory = [newEntry, ...interviewHistory];
-    setInterviewHistory(updatedHistory);
-    localStorage.setItem('interviewHistory', JSON.stringify(updatedHistory));
-  };
+  }, [interviewStarted, inputType, toast]);
+  
 
   const handleAnswer = async () => {
-    let finalAnswer = '';
-
     if (inputType === 'voice') {
       if (isRecording) {
-        // Stop recording and trigger analysis
+        // Stop recording, onend will handle the rest
         recognitionRef.current?.stop();
-        setIsRecording(false);
-        finalAnswer = finalTranscriptRef.current.trim();
-        
-        if (finalAnswer && state.question && state.role) {
-          setIsAnalyzing(true);
-          try {
-            const result = await analyzeAnswer({ question: state.question, answer: finalAnswer, role: state.role });
-            saveToHistory(state.question, finalAnswer, result);
-          } catch (error) {
-            console.error('Failed to analyze answer:', error);
-            toast({
-              variant: 'destructive',
-              title: 'Analysis Failed',
-              description: 'An unexpected error occurred during analysis.',
-            });
-            saveToHistory(state.question, finalAnswer, null);
-          } finally {
-            setIsAnalyzing(false);
-            setTranscript('');
-            finalTranscriptRef.current = '';
-          }
-        }
-        return; // Important: return after handling stop recording
       } else {
         // Start recording
-        if (typeof webkitSpeechRecognition === 'undefined') {
-          toast({
-            variant: 'destructive',
-            title: 'Browser Not Supported',
-            description:
-              'Speech recognition is not supported in your browser. Please use Google Chrome.',
-          });
-          return;
-        }
         setTranscript('');
         finalTranscriptRef.current = '';
         recognitionRef.current?.start();
         setIsRecording(true);
-        return; // Return early, analysis happens on stop
       }
     } else { // inputType === 'text'
-      finalAnswer = transcript.trim();
-        if (finalAnswer && state.question && state.role) {
-        setIsAnalyzing(true);
-        try {
-          const result = await analyzeAnswer({ question: state.question, answer: finalAnswer, role: state.role });
-          saveToHistory(state.question, finalAnswer, result);
-        } catch (error) {
-          console.error('Failed to analyze answer:', error);
-          toast({
-            variant: 'destructive',
-            title: 'Analysis Failed',
-            description: 'An unexpected error occurred during analysis.',
-          });
-          saveToHistory(state.question, finalAnswer, null);
-        } finally {
-          setIsAnalyzing(false);
-          setTranscript('');
-        }
+      const finalAnswer = transcript.trim();
+      if (finalAnswer) {
+        await performAnalysis(finalAnswer);
       }
     }
   };
   
   const handleNextQuestion = () => {
     if (isRecording) {
-      recognitionRef.current?.stop();
+      recognitionRef.current?.abort();
       setIsRecording(false);
     }
     setTranscript('');
     finalTranscriptRef.current = '';
     const formData = new FormData();
-    formData.set('role', state.role!);
+    formData.set('role', state.role || selectedRole);
     startTransition(() => {
       formAction(formData);
     });
