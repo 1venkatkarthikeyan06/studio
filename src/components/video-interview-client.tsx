@@ -75,7 +75,6 @@ export type InterviewEntry = {
   question: string;
   answer: string;
   anonymizedAnswer: string;
-  entityMap: AnalyzeAnswerOutput['entityMap'];
   analysis: AnalyzeAnswerOutput | null;
   date: string;
   role: string;
@@ -107,12 +106,6 @@ export default function VideoInterviewClient() {
     if (storedHistory) {
       setInterviewHistory(JSON.parse(storedHistory));
     }
-    // Eagerly get first question on load
-    const formData = new FormData();
-    formData.set('role', selectedRole);
-    startTransition(() => {
-      formAction(formData);
-    });
   }, []);
 
   useEffect(() => {
@@ -123,7 +116,10 @@ export default function VideoInterviewClient() {
         description: state.message,
       });
     }
-  }, [state, toast]);
+    if(interviewStarted && state.question){
+       // This handles setting the first question after starting
+    }
+  }, [state, toast, interviewStarted]);
 
   useEffect(() => {
     if (!interviewStarted || inputType === 'text') return;
@@ -212,7 +208,6 @@ export default function VideoInterviewClient() {
       answer,
       anonymizedAnswer:
         analysisResult?.anonymizedAnswer || '[Analysis failed]',
-      entityMap: analysisResult?.entityMap || [],
       analysis: analysisResult,
       date: new Date().toISOString(),
       role: state.role!,
@@ -291,8 +286,66 @@ export default function VideoInterviewClient() {
     startTransition(() => formAction(formData));
   }
 
-  if (interviewStarted) {
+  if (!interviewStarted) {
     return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 md:p-8">
+        <header className="w-full max-w-3xl mb-8 text-center">
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <Logo className="w-12 h-12 text-primary" />
+            <h1 className="text-4xl md:text-5xl font-headline font-bold">
+              AI Interview Bot
+            </h1>
+          </div>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Practice for your next interview and get instant, private feedback.
+          </p>
+        </header>
+
+        <main className="w-full max-w-xl text-center">
+          <form action={startInterview} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+              <div>
+                  <Label htmlFor="role-select">Select a Role</Label>
+                  <Select name="role" value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger id="role-select">
+                      <SelectValue placeholder="Select a role..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Software Engineer">Software Engineer</SelectItem>
+                      <SelectItem value="Product Manager">Product Manager</SelectItem>
+                      <SelectItem value="Sales">Sales</SelectItem>
+                    </SelectContent>
+                  </Select>
+              </div>
+              <div>
+                <Label htmlFor="input-type-select">Input Method</Label>
+                <Select name="inputType" value={inputType} onValueChange={(v: 'voice' | 'text') => setInputType(v)}>
+                    <SelectTrigger id="input-type-select">
+                      <SelectValue placeholder="Select input type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="voice">Voice (Speech-to-Text)</SelectItem>
+                      <SelectItem value="text">Text</SelectItem>
+                    </SelectContent>
+                  </Select>
+              </div>
+            </div>
+            <StartInterviewButton />
+          </form>
+          <InterviewHistory history={interviewHistory} />
+        </main>
+
+        <footer className="w-full max-w-5xl mt-16 text-center text-sm text-muted-foreground absolute bottom-8">
+          <p>
+            &copy; {new Date().getFullYear()} AI Interview Bot. All rights
+            reserved.
+          </p>
+        </footer>
+      </div>
+    );
+  }
+
+  return (
       <div className="flex flex-col items-center min-h-screen p-4 sm:p-6 md:p-8 bg-gray-50">
         <header className="w-full max-w-5xl mb-8 text-center">
           <div className="flex justify-center items-center gap-4 mb-4">
@@ -422,62 +475,4 @@ export default function VideoInterviewClient() {
         </main>
       </div>
     );
-  }
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 md:p-8">
-      <header className="w-full max-w-3xl mb-8 text-center">
-        <div className="flex justify-center items-center gap-4 mb-4">
-          <Logo className="w-12 h-12 text-primary" />
-          <h1 className="text-4xl md:text-5xl font-headline font-bold">
-            AI Interview Bot
-          </h1>
-        </div>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Practice for your next interview and get instant, private feedback.
-        </p>
-      </header>
-
-      <main className="w-full max-w-xl text-center">
-        <form action={startInterview} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-            <div>
-                <Label htmlFor="role-select">Select a Role</Label>
-                <Select name="role" value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger id="role-select">
-                    <SelectValue placeholder="Select a role..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-                    <SelectItem value="Product Manager">Product Manager</SelectItem>
-                    <SelectItem value="Sales">Sales</SelectItem>
-                  </SelectContent>
-                </Select>
-            </div>
-            <div>
-              <Label htmlFor="input-type-select">Input Method</Label>
-              <Select name="inputType" value={inputType} onValueChange={(v: 'voice' | 'text') => setInputType(v)}>
-                  <SelectTrigger id="input-type-select">
-                    <SelectValue placeholder="Select input type..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="voice">Voice (Speech-to-Text)</SelectItem>
-                    <SelectItem value="text">Text</SelectItem>
-                  </SelectContent>
-                </Select>
-            </div>
-          </div>
-          <StartInterviewButton />
-        </form>
-        <InterviewHistory history={interviewHistory} />
-      </main>
-
-      <footer className="w-full max-w-5xl mt-16 text-center text-sm text-muted-foreground absolute bottom-8">
-        <p>
-          &copy; {new Date().getFullYear()} AI Interview Bot. All rights
-          reserved.
-        </p>
-      </footer>
-    </div>
-  );
 }

@@ -8,14 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InterviewEntry } from './video-interview-client';
 import { formatDistanceToNow } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Badge } from './ui/badge';
 import { Lightbulb, BookCheck, Clock } from 'lucide-react';
 
@@ -54,10 +46,9 @@ export default function InterviewHistory({ history }: InterviewHistoryProps) {
               </AccordionTrigger>
               <AccordionContent>
                 <Tabs defaultValue="analysis">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="analysis">Feedback</TabsTrigger>
                     <TabsTrigger value="answer">Anonymized Answer</TabsTrigger>
-                    <TabsTrigger value="pii">PII Analysis</TabsTrigger>
                   </TabsList>
                   <TabsContent value="analysis">
                     <div className="space-y-4 mt-4">
@@ -97,45 +88,6 @@ export default function InterviewHistory({ history }: InterviewHistoryProps) {
                           {entry.anonymizedAnswer}
                         </p>
                       </div>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="pii">
-                    <div className="space-y-4 mt-4">
-                      <p className="text-sm text-muted-foreground">
-                        The following sensitive information was identified and
-                        replaced.
-                      </p>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Original</TableHead>
-                            <TableHead>Anonymized</TableHead>
-                            <TableHead>Type</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {entry.entityMap && entry.entityMap.length > 0 ? (
-                            entry.entityMap.map((entity, idx) => (
-                              <TableRow key={idx}>
-                                <TableCell className="font-medium">
-                                  {entity.original}
-                                </TableCell>
-                                <TableCell>{entity.anonymized}</TableCell>
-                                <TableCell>{entity.type}</TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell
-                                colSpan={3}
-                                className="text-center text-muted-foreground"
-                              >
-                                No sensitive data detected.
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
                     </div>
                   </TabsContent>
                 </Tabs>
