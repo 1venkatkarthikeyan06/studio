@@ -2,11 +2,20 @@
 
 const questions: Record<string, string[]> = {
   'Software Engineer': [
+    'Tell me about yourself.',
+    'What are your greatest strengths?',
+    'What is your greatest weakness?',
+    'Why do you want to work for this company?',
+    'Why are you leaving your current role?',
+    'Where do you see yourself in five years?',
+    'Tell me about a time you faced a significant challenge.',
     'Tell me about a challenging project you worked on.',
     'How do you stay updated with the latest technologies?',
     'Describe your experience with version control systems like Git.',
     'Explain the difference between SQL and NoSQL databases.',
     'Walk me through your process for debugging a complex issue.',
+  ],
+  'Product Manager': [
     'Tell me about yourself.',
     'What are your greatest strengths?',
     'What is your greatest weakness?',
@@ -14,13 +23,13 @@ const questions: Record<string, string[]> = {
     'Why are you leaving your current role?',
     'Where do you see yourself in five years?',
     'Tell me about a time you faced a significant challenge.',
-  ],
-  'Product Manager': [
     'How do you decide which features to prioritize?',
     'Describe a time you had to say "no" to a stakeholder.',
     'What is your favorite product and how would you improve it?',
     'How do you work with engineering teams?',
     'How do you measure the success of a product?',
+  ],
+  'Sales': [
     'Tell me about yourself.',
     'What are your greatest strengths?',
     'What is your greatest weakness?',
@@ -28,20 +37,11 @@ const questions: Record<string, string[]> = {
     'Why are you leaving your current role?',
     'Where do you see yourself in five years?',
     'Tell me about a time you faced a significant challenge.',
-  ],
-  'Sales': [
     'How do you handle objections from a potential customer?',
     'Describe your sales process from lead generation to closing.',
     'Tell me about a time you missed a sales quota.',
     'What motivates you in a sales role?',
     'How do you research a potential client before a meeting?',
-    'Tell me about yourself.',
-    'What are your greatest strengths?',
-    'What is your greatest weakness?',
-    'Why do you want to work for this company?',
-    'Why are you leaving your current role?',
-    'Where do you see yourself in five years?',
-    'Tell me about a time you faced a significant challenge.',
   ]
 };
 
