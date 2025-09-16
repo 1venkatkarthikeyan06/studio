@@ -124,7 +124,8 @@ export default function VideoInterviewClient() {
   const saveToHistory = (
     question: string,
     answer: string,
-    analysisResult: AnalyzeAnswerOutput | null
+    analysisResult: AnalyzeAnswerOutput | null,
+    role: string
   ) => {
     setInterviewHistory(prevHistory => {
       const newEntry: InterviewEntry = {
@@ -134,7 +135,7 @@ export default function VideoInterviewClient() {
           analysisResult?.anonymizedAnswer || '[Analysis failed]',
         analysis: analysisResult,
         date: new Date().toISOString(),
-        role: state.role!,
+        role,
         inputType,
       };
       const updatedHistory = [newEntry, ...prevHistory];
@@ -143,15 +144,15 @@ export default function VideoInterviewClient() {
     });
   };
 
-  const performAnalysis = async (answer: string) => {
-    if (!answer || !state.question || !state.role) {
+  const performAnalysis = async (answer: string, question: string, role: string) => {
+    if (!answer || !question || !role) {
         return;
     }
     
     setIsAnalyzing(true);
     try {
-        const result = await analyzeAnswer({ question: state.question, answer, role: state.role });
-        saveToHistory(state.question, answer, result);
+        const result = await analyzeAnswer({ question, answer, role });
+        saveToHistory(question, answer, result, role);
     } catch (error) {
         console.error('Failed to analyze answer:', error);
         toast({
@@ -159,7 +160,7 @@ export default function VideoInterviewClient() {
             title: 'Analysis Failed',
             description: 'An unexpected error occurred during analysis.',
         });
-        saveToHistory(state.question, answer, null);
+        saveToHistory(question, answer, null, role);
     } finally {
         setIsAnalyzing(false);
         setTranscript('');
@@ -214,14 +215,15 @@ export default function VideoInterviewClient() {
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
-      finalTranscriptRef.current = '';
+      let currentFinalTranscript = '';
       for (let i = 0; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
-          finalTranscriptRef.current += event.results[i][0].transcript;
+          currentFinalTranscript += event.results[i][0].transcript;
         } else {
           interimTranscript += event.results[i][0].transcript;
         }
       }
+      finalTranscriptRef.current = currentFinalTranscript;
       setTranscript(finalTranscriptRef.current + interimTranscript);
     };
 
@@ -241,8 +243,10 @@ export default function VideoInterviewClient() {
     recognition.onend = () => {
       setIsRecording(false);
       const finalAnswer = finalTranscriptRef.current.trim();
-      if(finalAnswer) {
-        performAnalysis(finalAnswer);
+      const questionAtTimeOfAnswer = state.question;
+      const roleAtTimeOfAnswer = state.role;
+      if(finalAnswer && questionAtTimeOfAnswer && roleAtTimeOfAnswer) {
+        performAnalysis(finalAnswer, questionAtTimeOfAnswer, roleAtTimeOfAnswer);
       }
     };
 
@@ -259,7 +263,7 @@ export default function VideoInterviewClient() {
         recognitionRef.current.abort();
       }
     };
-  }, [interviewStarted, inputType, toast]);
+  }, [interviewStarted, inputType, state.question, state.role, toast]);
   
 
   const handleAnswer = async () => {
@@ -276,8 +280,10 @@ export default function VideoInterviewClient() {
       }
     } else { // inputType === 'text'
       const finalAnswer = transcript.trim();
-      if (finalAnswer) {
-        await performAnalysis(finalAnswer);
+      const questionAtTimeOfAnswer = state.question;
+      const roleAtTimeOfAnswer = state.role;
+      if (finalAnswer && questionAtTimeOfAnswer && roleAtTimeOfAnswer) {
+        await performAnalysis(finalAnswer, questionAtTimeOfAnswer, roleAtTimeOfAnswer);
       }
     }
   };
