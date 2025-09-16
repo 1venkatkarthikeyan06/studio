@@ -116,10 +116,7 @@ export default function VideoInterviewClient() {
         description: state.message,
       });
     }
-    if(interviewStarted && state.question){
-       // This handles setting the first question after starting
-    }
-  }, [state, toast, interviewStarted]);
+  }, [state, toast]);
 
   useEffect(() => {
     if (!interviewStarted || inputType === 'text') return;
@@ -223,10 +220,33 @@ export default function VideoInterviewClient() {
 
     if (inputType === 'voice') {
       if (isRecording) {
+        // Stop recording and trigger analysis
         recognitionRef.current?.stop();
         setIsRecording(false);
         finalAnswer = finalTranscriptRef.current.trim();
+        
+        if (finalAnswer && state.question && state.role) {
+          setIsAnalyzing(true);
+          try {
+            const result = await analyzeAnswer({ question: state.question, answer: finalAnswer, role: state.role });
+            saveToHistory(state.question, finalAnswer, result);
+          } catch (error) {
+            console.error('Failed to analyze answer:', error);
+            toast({
+              variant: 'destructive',
+              title: 'Analysis Failed',
+              description: 'An unexpected error occurred during analysis.',
+            });
+            saveToHistory(state.question, finalAnswer, null);
+          } finally {
+            setIsAnalyzing(false);
+            setTranscript('');
+            finalTranscriptRef.current = '';
+          }
+        }
+        return; // Important: return after handling stop recording
       } else {
+        // Start recording
         if (typeof webkitSpeechRecognition === 'undefined') {
           toast({
             variant: 'destructive',
@@ -244,25 +264,23 @@ export default function VideoInterviewClient() {
       }
     } else { // inputType === 'text'
       finalAnswer = transcript.trim();
-    }
-
-    if (finalAnswer && state.question && state.role) {
-      setIsAnalyzing(true);
-      try {
-        const result = await analyzeAnswer({ question: state.question, answer: finalAnswer, role: state.role });
-        saveToHistory(state.question, finalAnswer, result);
-      } catch (error) {
-        console.error('Failed to analyze answer:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Analysis Failed',
-          description: 'An unexpected error occurred during analysis.',
-        });
-        saveToHistory(state.question, finalAnswer, null);
-      } finally {
-        setIsAnalyzing(false);
-        setTranscript('');
-        finalTranscriptRef.current = '';
+        if (finalAnswer && state.question && state.role) {
+        setIsAnalyzing(true);
+        try {
+          const result = await analyzeAnswer({ question: state.question, answer: finalAnswer, role: state.role });
+          saveToHistory(state.question, finalAnswer, result);
+        } catch (error) {
+          console.error('Failed to analyze answer:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Analysis Failed',
+            description: 'An unexpected error occurred during analysis.',
+          });
+          saveToHistory(state.question, finalAnswer, null);
+        } finally {
+          setIsAnalyzing(false);
+          setTranscript('');
+        }
       }
     }
   };
