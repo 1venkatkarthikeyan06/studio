@@ -13,7 +13,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Video, Mic, RefreshCw, AlertCircle, Type } from 'lucide-react';
+import { Loader2, Video, Mic, RefreshCw, AlertCircle, Type, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/logo';
 import {
@@ -24,6 +24,7 @@ import InterviewHistory from './interview-history';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
+import Link from 'next/link';
 
 const initialState: State = {
   message: null,
@@ -127,17 +128,18 @@ export default function VideoInterviewClient() {
     analysisResult: AnalyzeAnswerOutput | null,
     role: string
   ) => {
+    const newEntry: InterviewEntry = {
+      question,
+      answer,
+      anonymizedAnswer:
+        analysisResult?.anonymizedAnswer || '[Analysis failed]',
+      analysis: analysisResult,
+      date: new Date().toISOString(),
+      role,
+      inputType,
+    };
+
     setInterviewHistory(prevHistory => {
-      const newEntry: InterviewEntry = {
-        question,
-        answer,
-        anonymizedAnswer:
-          analysisResult?.anonymizedAnswer || '[Analysis failed]',
-        analysis: analysisResult,
-        date: new Date().toISOString(),
-        role,
-        inputType,
-      };
       const updatedHistory = [newEntry, ...prevHistory];
       localStorage.setItem('interviewHistory', JSON.stringify(updatedHistory));
       return updatedHistory;
@@ -215,21 +217,19 @@ export default function VideoInterviewClient() {
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
-      let currentFinalTranscript = '';
-      for (let i = 0; i < event.results.length; ++i) {
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
-          currentFinalTranscript += event.results[i][0].transcript;
+          finalTranscriptRef.current += event.results[i][0].transcript;
         } else {
           interimTranscript += event.results[i][0].transcript;
         }
       }
-      finalTranscriptRef.current = currentFinalTranscript;
       setTranscript(finalTranscriptRef.current + interimTranscript);
     };
 
     recognition.onerror = (event: any) => {
-      if (event.error === 'aborted') {
-        return; // Ignore aborted errors, they are expected
+      if (event.error === 'aborted' || event.error === 'no-speech') {
+        return; // Ignore these expected "errors"
       }
       console.error('Speech recognition error', event.error);
       toast({
@@ -367,12 +367,20 @@ export default function VideoInterviewClient() {
 
   return (
       <div className="flex flex-col items-center min-h-screen p-4 sm:p-6 md:p-8 bg-gray-50">
-        <header className="w-full max-w-5xl mb-8 text-center">
-          <div className="flex justify-center items-center gap-4 mb-4">
-            <Logo className="w-12 h-12 text-primary" />
-            <h1 className="text-4xl md:text-5xl font-headline font-bold">
-              AI Interview Practice
-            </h1>
+        <header className="w-full max-w-5xl mb-8">
+           <div className="flex justify-between items-center w-full">
+            <div className="flex items-center gap-4">
+              <Logo className="w-12 h-12 text-primary" />
+              <h1 className="text-2xl md:text-4xl font-headline font-bold">
+                AI Interview Practice
+              </h1>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/">
+                <LogOut className="mr-2" />
+                Logout
+              </Link>
+            </Button>
           </div>
         </header>
 
@@ -496,3 +504,5 @@ export default function VideoInterviewClient() {
       </div>
     );
 }
+
+    
